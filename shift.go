@@ -8,12 +8,17 @@ Package shift is an optioned circuit breaker implementation.
 Features
 
 - Every component is optional with defaults
+
 - Comes with built-in execution timeout feature which cancels the execution by
 optioned timeout duration
+
 - Allows subscribing state change, failure and success events
+
 - Allows overriding the current state with callbacks
+
 - Allows adding reset timer which can be implemented using an exponential
 backoff algorithm or any other algorithm when needed
+
 - Allows adding restrictors like max concurrent runs, and any other restrictor
 can be implemented
 
