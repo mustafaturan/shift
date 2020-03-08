@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mustafaturan/shift/timers"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,7 +21,7 @@ func TestRun_WithRestrictionCheck(t *testing.T) {
 			WithRestrictors(restrictor),
 		)
 		ctx := context.Background()
-		var fn Operate = func(context.Context, ...interface{}) (interface{}, error) {
+		var fn Operate = func(context.Context) (interface{}, error) {
 			return "TestRun_WithRestrictionCheck", nil
 		}
 		res, err := cb.Run(ctx, fn)
@@ -37,7 +38,7 @@ func TestRun_WithRestrictionCheck(t *testing.T) {
 			WithRestrictors(restrictor),
 		)
 		ctx := context.Background()
-		var fn Operate = func(context.Context, ...interface{}) (interface{}, error) {
+		var fn Operate = func(context.Context) (interface{}, error) {
 			return "TestRun_WithRestrictionCheck", nil
 		}
 		res, err := cb.Run(ctx, fn)
@@ -57,7 +58,7 @@ func TestRun_OnStateClose(t *testing.T) {
 			WithInitialState(StateClose),
 		)
 		ctx := context.Background()
-		var fn Operate = func(context.Context, ...interface{}) (interface{}, error) {
+		var fn Operate = func(context.Context) (interface{}, error) {
 			return "TestRun_OnStateClose", nil
 		}
 		res, err := cb.Run(ctx, fn)
@@ -73,7 +74,7 @@ func TestRun_OnStateClose(t *testing.T) {
 		)
 		cb.failureThreshold = 2
 		ctx := context.Background()
-		var fn Operate = func(context.Context, ...interface{}) (interface{}, error) {
+		var fn Operate = func(context.Context) (interface{}, error) {
 			return nil, errors.New("foo")
 		}
 		res, err := cb.Run(ctx, fn)
@@ -90,7 +91,7 @@ func TestRun_OnStateClose(t *testing.T) {
 		)
 		cb.failureThreshold = 1
 		ctx := context.Background()
-		var fn Operate = func(context.Context, ...interface{}) (interface{}, error) {
+		var fn Operate = func(context.Context) (interface{}, error) {
 			return nil, errors.New("foo")
 		}
 		res, err := cb.Run(ctx, fn)
@@ -112,7 +113,7 @@ func TestRun_OnStateHalfOpen(t *testing.T) {
 		)
 		cb.successThreshold = 3
 		ctx := context.Background()
-		var fn Operate = func(context.Context, ...interface{}) (interface{}, error) {
+		var fn Operate = func(context.Context) (interface{}, error) {
 			return "TestRun_OnStateHalfOpen", nil
 		}
 		res, err := cb.Run(ctx, fn)
@@ -130,7 +131,7 @@ func TestRun_OnStateHalfOpen(t *testing.T) {
 		cb.failure = 3
 		cb.successThreshold = 1
 		ctx := context.Background()
-		var fn Operate = func(context.Context, ...interface{}) (interface{}, error) {
+		var fn Operate = func(context.Context) (interface{}, error) {
 			return "TestRun_OnStateHalfOpen", nil
 		}
 		res, err := cb.Run(ctx, fn)
@@ -151,7 +152,7 @@ func TestRun_OnStateHalfOpen(t *testing.T) {
 		now := time.Now()
 		cb.resetAt = now
 		cb.failureThreshold = 1
-		var fn Operate = func(context.Context, ...interface{}) (interface{}, error) {
+		var fn Operate = func(context.Context) (interface{}, error) {
 			return nil, errors.New("foo")
 		}
 		res, err := cb.Run(ctx, fn)
@@ -170,7 +171,7 @@ func TestRun_OnStateOpen(t *testing.T) {
 		WithInitialState(StateOpen),
 	)
 	ctx := context.Background()
-	var fn Operate = func(context.Context, ...interface{}) (interface{}, error) {
+	var fn Operate = func(context.Context) (interface{}, error) {
 		return "TestRun_OnStateOpen", nil
 	}
 	res, err := cb.Run(ctx, fn)
@@ -211,7 +212,7 @@ func TestRun_WithTimeoutError(t *testing.T) {
 			WithInitialState(StateClose),
 		)
 		ctx := context.Background()
-		var fn Operate = func(context.Context, ...interface{}) (interface{}, error) {
+		var fn Operate = func(context.Context) (interface{}, error) {
 			time.Sleep(100 * time.Millisecond)
 			return "TestRun_WithTimeoutError", nil
 		}
@@ -230,7 +231,7 @@ func TestRun_WithTimeoutError(t *testing.T) {
 			WithInitialState(StateClose),
 		)
 		ctx := context.Background()
-		var fn Operate = func(context.Context, ...interface{}) (interface{}, error) {
+		var fn Operate = func(context.Context) (interface{}, error) {
 			return "TestRun_WithTimeoutError", nil
 		}
 
@@ -269,6 +270,18 @@ func TestOverride(t *testing.T) {
 		cb.Override(test.state)
 		assert.Equal(t, test.state, cb.State())
 	}
+}
+
+func TestOverride_StateOpenWithResetTimeout(t *testing.T) {
+	timer := timers.NewConstantTimer(50 * time.Millisecond)
+	cb, _ := NewCircuitBreaker(
+		"test",
+		WithResetTimer(timer),
+	)
+	cb.Override(StateOpen)
+	assert.Equal(t, StateOpen, cb.State())
+	time.Sleep(100 * time.Millisecond)
+	assert.Equal(t, StateHalfOpen, cb.State())
 }
 
 func TestCircuitBreakerOverrideError(t *testing.T) {

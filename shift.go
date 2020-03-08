@@ -40,7 +40,7 @@ Execute with a function implementation:
 	}
 
 	func DoSomethingWithFn(ctx context.Context, cb *shift.CircuitBreaker) string {
-		var fn shift.Operate = func(ctx context.Context, ...interface{}) (interface{}, error) {
+		var fn shift.Operate = func(ctx context.Context) (interface{}, error) {
 			// do something in here
 			return "foo", nil
 		}

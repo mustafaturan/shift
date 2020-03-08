@@ -12,7 +12,7 @@ import (
 )
 
 // Run executes the given func with circuit breaker
-func (cb *CircuitBreaker) Run(ctx context.Context, o Operator, opts ...interface{}) (interface{}, error) {
+func (cb *CircuitBreaker) Run(ctx context.Context, o Operator) (interface{}, error) {
 	for _, r := range cb.restrictors {
 		defer r.Defer()
 		ok, err := r.Check()
@@ -21,7 +21,7 @@ func (cb *CircuitBreaker) Run(ctx context.Context, o Operator, opts ...interface
 		}
 	}
 
-	return cb.run(ctx, o, opts)
+	return cb.run(ctx, o)
 }
 
 // Override manually overrides the current state with side effects
@@ -46,15 +46,15 @@ func (cb *CircuitBreaker) State() State {
 
 // Operator is an interface for circuit breaker operations
 type Operator interface {
-	Execute(context.Context, ...interface{}) (interface{}, error)
+	Execute(context.Context) (interface{}, error)
 }
 
 // Operate is a function that runs the operation
-type Operate func(context.Context, ...interface{}) (interface{}, error)
+type Operate func(context.Context) (interface{}, error)
 
 // Execute implements Operator interface for any Operate fn
-func (o Operate) Execute(ctx context.Context, opts ...interface{}) (interface{}, error) {
-	return o(ctx, opts)
+func (o Operate) Execute(ctx context.Context) (interface{}, error) {
+	return o(ctx)
 }
 
 // CircuitBreakerOverrideError is a error type for open state
@@ -98,20 +98,20 @@ func (e *TimeoutError) Error() string {
 }
 
 // run executes the operator without any restriction
-func (cb *CircuitBreaker) run(ctx context.Context, o Operator, opts ...interface{}) (interface{}, error) {
+func (cb *CircuitBreaker) run(ctx context.Context, o Operator) (interface{}, error) {
 	s := cb.State()
 	if s.isClose() {
-		return cb.runClose(ctx, o, opts)
+		return cb.runClose(ctx, o)
 	}
 
 	if s.isHalfOpen() {
-		return cb.runHalfOpen(ctx, o, opts)
+		return cb.runHalfOpen(ctx, o)
 	}
 
 	return cb.runOpen()
 }
 
-func (cb *CircuitBreaker) runWithTimeout(ctx context.Context, o Operator, opts ...interface{}) (interface{}, error) {
+func (cb *CircuitBreaker) runWithTimeout(ctx context.Context, o Operator) (interface{}, error) {
 	var cancel context.CancelFunc
 	ctx, cancel = context.WithTimeout(ctx, cb.invocationTimeout)
 	defer cancel()
@@ -119,12 +119,12 @@ func (cb *CircuitBreaker) runWithTimeout(ctx context.Context, o Operator, opts .
 	select {
 	case <-ctx.Done():
 		return nil, &TimeoutError{Name: cb.name, Duration: cb.invocationTimeout}
-	case i := <-cb.invoke(ctx, o, opts):
+	case i := <-cb.invoke(ctx, o):
 		return i.res, i.err
 	}
 }
 
-func (cb *CircuitBreaker) invoke(ctx context.Context, o Operator, opts ...interface{}) chan invocation {
+func (cb *CircuitBreaker) invoke(ctx context.Context, o Operator) chan invocation {
 	// allow putting one invocation result into chan even if noone reads
 	ch := make(chan invocation, 1)
 
@@ -136,7 +136,7 @@ func (cb *CircuitBreaker) invoke(ctx context.Context, o Operator, opts ...interf
 			defer close(ch)
 
 			// operator can cancel execution with context timeout too
-			res, err := o.Execute(ctx, opts)
+			res, err := o.Execute(ctx)
 
 			// even if noone reads, it is non-blocking
 			ch <- invocation{res: res, err: err}
@@ -146,8 +146,8 @@ func (cb *CircuitBreaker) invoke(ctx context.Context, o Operator, opts ...interf
 	return ch
 }
 
-func (cb *CircuitBreaker) runClose(ctx context.Context, o Operator, opts ...interface{}) (interface{}, error) {
-	res, err := cb.runWithTimeout(ctx, o, opts)
+func (cb *CircuitBreaker) runClose(ctx context.Context, o Operator) (interface{}, error) {
+	res, err := cb.runWithTimeout(ctx, o)
 	if err != nil {
 		if cb.failureThreshold <= atomic.AddInt32(&cb.failure, 1) {
 			cb.open(err)
@@ -160,8 +160,8 @@ func (cb *CircuitBreaker) runClose(ctx context.Context, o Operator, opts ...inte
 	return res, err
 }
 
-func (cb *CircuitBreaker) runHalfOpen(ctx context.Context, o Operator, opts ...interface{}) (interface{}, error) {
-	res, err := cb.runWithTimeout(ctx, o, opts)
+func (cb *CircuitBreaker) runHalfOpen(ctx context.Context, o Operator) (interface{}, error) {
+	res, err := cb.runWithTimeout(ctx, o)
 	if err != nil {
 		cb.open(err)
 		cb.runOnFailureCallbacks(StateHalfOpen, err)
@@ -206,7 +206,7 @@ func (cb *CircuitBreaker) open(err error) {
 		duration := cb.resetTimer.Next(err)
 		cb.resetAt = time.Now().Add(duration)
 		cb.runStateChangeCallbacks(from, StateOpen)
-		time.AfterFunc(duration, func() { cb.halfOpen() })
+		time.AfterFunc(duration, cb.halfOpen)
 	}
 }
 
