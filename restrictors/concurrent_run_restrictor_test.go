@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewConcurrentRunRestrictor(t *testing.T) {
@@ -38,7 +39,10 @@ func TestCheck(t *testing.T) {
 	t.Run("over threshold", func(t *testing.T) {
 		r, _ := NewConcurrentRunRestrictor("test", 1)
 
-		go r.Check()
+		go func() {
+			_, err := r.Check()
+			require.NoError(t, err)
+		}()
 
 		time.Sleep(50 * time.Millisecond)
 		ok, err := r.Check()
@@ -51,7 +55,9 @@ func TestCheck(t *testing.T) {
 
 func TestDefer(t *testing.T) {
 	r, _ := NewConcurrentRunRestrictor("test", 1)
-	r.Check()
+	_, err := r.Check()
+	require.NoError(t, err)
+
 	assert.Equal(t, int64(1), r.current)
 	r.Defer()
 	assert.Equal(t, int64(0), r.current)
