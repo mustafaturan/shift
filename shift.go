@@ -192,5 +192,5 @@ package shift
 
 const (
 	// Version is the current shift package version
-	Version = "0.1.1"
+	Version = "0.2.0"
 )
