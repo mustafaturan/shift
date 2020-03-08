@@ -131,7 +131,7 @@ func (cb *CircuitBreaker) invoke(ctx context.Context, o Operator, opts ...interf
 	defer func() {
 		go func() {
 			// close the chan right after putting the val into it, since the
-			// receive happens earlier then the put operation it won't casue any
+			// receive happens earlier then the put operation it won't cause any
 			// problem
 			defer close(ch)
 
