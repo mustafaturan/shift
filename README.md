@@ -80,66 +80,6 @@ func main() {
 }
 ```
 
-#### Execute with an interface implementation
-
-```go
-import (
-	"context"
-	"fmt"
-
-	"github.com/mustafafuran/shift"
-)
-
-func NewCircuitBreaker() *shift.CircuitBreaker {
-	cb, err := shift.NewCircuitBreaker("twitter-cli")
-	if err != nil {
-		panic(err)
-	}
-	return cb
-}
-
-type TweetFetcher struct {
-	cb *shift.CircuitBreaker
-}
-
-type Tweet struct {
-	ID 	  int
-	Title string
-}
-
-func (tf *TweetFetcher) Execute(ctx context.Context, opts ...interface{}) (interface{}, error) {
-	var tweet *Tweet
-	var err error
-
-	id := opts[0].(int)
-
-	// do something to fetch a tweet information
-	tweet = &Tweet{
-		ID:    id,
-		Title: "Fake tweet",
-	}
-	return tweet, err
-}
-
-func (tf *TweetFetcher) FetchWithCircuitBreaker(ctx context.Context, id int) *Tweet {
-	res, err := tf.cb.Run(ctx, tf, id)
-	if err != nil {
-		// maybe read from cache to set the res again?
-	}
-
-	// convert your res into your actual data
-	tweet := res.(*Tweet)
-	return tweet
-}
-
-func main() {
-	cb, err := NewCircuitBreaker()
-	tf := &TweetFetcher{cb}
-	tweet := tf.FetchWithCircuitBreaker(ctx, 1)
-	fmt.Printf("tweet: %+v\n", *tweet)
-}
-```
-
 ### Configure for max concurrent runnables
 
 Shift allows adding restrictors like max concurrent runnables to prevent
