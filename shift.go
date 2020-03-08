@@ -119,11 +119,13 @@ Monitoring
 Monitoring is set with options in shift package CircuitBreaker initializations.
 Shift package allows adding multiple hooks on three circuit breaker events;
 
-* **State Change Event:** Allows attaching handlers when the circuit breaker
+- **State Change Event:** Allows attaching handlers when the circuit breaker
 state changes
-* **Failure Event:** Allows attaching handlers when the circuit breaker
+
+- **Failure Event:** Allows attaching handlers when the circuit breaker
 execution results with an error
-* **Success Event:** Allows attaccing handlers when the circuit breaker
+
+- **Success Event:** Allows attaccing handlers when the circuit breaker
 execution results without an error
 
 Configure with On State Change Handlers:
@@ -190,5 +192,5 @@ package shift
 
 const (
 	// Version is the current shift package version
-	Version = "0.1.0"
+	Version = "0.1.1"
 )
