@@ -221,6 +221,10 @@ cb, err := shift.NewCircuitBreaker(
 Please refer to [GoDoc](https://godoc.org/github.com/mustafaturan/shift) for
 more options and configurations.
 
+#### Examples
+
+[Shift Examples Repository](https://github.com/mustafaturan/shift-examples)
+
 ## Contributing
 
 All contributors should follow [Contributing Guidelines](CONTRIBUTING.md) before
