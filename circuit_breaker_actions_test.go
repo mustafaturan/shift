@@ -73,6 +73,7 @@ func TestRun_OnStateClose(t *testing.T) {
 			WithInitialState(StateClose),
 		)
 		cb.failureThreshold = 2
+		cb.failureMinRequests = 1
 		ctx := context.Background()
 		var fn Operate = func(context.Context) (interface{}, error) {
 			return nil, errors.New("foo")
@@ -90,6 +91,7 @@ func TestRun_OnStateClose(t *testing.T) {
 			WithInitialState(StateClose),
 		)
 		cb.failureThreshold = 99.99
+		cb.failureMinRequests = 1
 		ctx := context.Background()
 		var fn Operate = func(context.Context) (interface{}, error) {
 			return nil, errors.New("foo")

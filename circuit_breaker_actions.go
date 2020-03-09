@@ -152,8 +152,8 @@ func (cb *CircuitBreaker) runClose(ctx context.Context, o Operator) (interface{}
 		failures := atomic.AddInt64(&cb.failure, 1)
 		successes := atomic.LoadInt64(&cb.success)
 		requests := successes + failures
-		ratio := float64(failures) / float64(requests)
-		if cb.failureThreshold > ratio && cb.failureMinRequests >= requests {
+		ratio := (float64(failures) / float64(requests)) * 100
+		if cb.failureThreshold < ratio && cb.failureMinRequests <= requests {
 			cb.open(err)
 		}
 		cb.runOnFailureCallbacks(StateClose, err)
