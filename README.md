@@ -51,7 +51,11 @@ import (
 )
 
 func NewCircuitBreaker() *shift.CircuitBreaker {
-	cb, err := shift.NewCircuitBreaker("a-name-for-the-breaker")
+	successRate, minRequests := float64(99.99), int64(3)
+	cb, err := shift.NewCircuitBreaker(
+		"a-name-for-the-breaker",
+		shift.WithFailureThreshold(successRate, minRequests),
+	)
 	if err != nil {
 		panic(err)
 	}

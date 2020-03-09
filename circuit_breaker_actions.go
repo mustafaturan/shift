@@ -149,13 +149,18 @@ func (cb *CircuitBreaker) invoke(ctx context.Context, o Operator) chan invocatio
 func (cb *CircuitBreaker) runClose(ctx context.Context, o Operator) (interface{}, error) {
 	res, err := cb.runWithTimeout(ctx, o)
 	if err != nil {
-		if cb.failureThreshold <= atomic.AddInt32(&cb.failure, 1) {
+		failures := atomic.AddInt64(&cb.failure, 1)
+		successes := atomic.LoadInt64(&cb.success)
+		requests := successes + failures
+		ratio := float64(failures) / float64(requests)
+		if cb.failureThreshold > ratio && cb.failureMinRequests >= requests {
 			cb.open(err)
 		}
 		cb.runOnFailureCallbacks(StateClose, err)
 		return nil, err
 	}
 
+	atomic.AddInt64(&cb.success, 1)
 	cb.runOnSuccessCallbacks(res)
 	return res, err
 }
@@ -168,7 +173,7 @@ func (cb *CircuitBreaker) runHalfOpen(ctx context.Context, o Operator) (interfac
 		return nil, err
 	}
 
-	if cb.successThreshold <= atomic.AddInt32(&cb.success, 1) {
+	if cb.successThreshold <= atomic.AddInt64(&cb.success, 1) {
 		cb.close()
 	}
 	cb.runOnSuccessCallbacks(res)
@@ -219,6 +224,7 @@ func (cb *CircuitBreaker) tryToClose() (State, bool) {
 		return s, false
 	}
 
+	cb.success = 0
 	cb.failure = 0
 	cb.state = StateClose
 	cb.resetTimer.Reset()

@@ -32,10 +32,11 @@ Execute with a function implementation:
 	)
 
 	func NewCircuitBreaker() *shift.CircuitBreaker {
-		cb, err := shift.NewCircuitBreaker("a-name-for-the-breaker")
-		if err != nil {
-			panic(err)
-		}
+		successRate, minRequests := float64(99.99), int64(3)
+		cb, err := shift.NewCircuitBreaker(
+			"a-name-for-the-breaker",
+			shift.WithFailureThreshold(successRate, minRequests),
+		)
 		return cb
 	}
 

@@ -89,7 +89,7 @@ func TestRun_OnStateClose(t *testing.T) {
 			WithOnStateChangeHandlers(onStateChangeHandler),
 			WithInitialState(StateClose),
 		)
-		cb.failureThreshold = 1
+		cb.failureThreshold = 99.99
 		ctx := context.Background()
 		var fn Operate = func(context.Context) (interface{}, error) {
 			return nil, errors.New("foo")
@@ -138,7 +138,7 @@ func TestRun_OnStateHalfOpen(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, res)
 		assert.True(t, cb.State().isClose())
-		assert.Equal(t, int32(0), cb.failure)
+		assert.Equal(t, int64(0), cb.failure)
 	})
 
 	t.Run("on failure", func(t *testing.T) {

@@ -19,14 +19,15 @@ type CircuitBreaker struct {
 	name  string
 	state State
 
-	failure int32
-	success int32
+	failure int64
+	success int64
 	resetAt time.Time
 
-	failureThreshold  int32
-	successThreshold  int32
-	invocationTimeout time.Duration
-	resetTimer        Timer
+	failureMinRequests int64
+	failureThreshold   float64
+	successThreshold   int64
+	invocationTimeout  time.Duration
+	resetTimer         Timer
 
 	restrictors []Restrictor
 
@@ -48,11 +49,14 @@ const (
 	// optionDefaultInitialState default initial state
 	optionDefaultInitialState = StateClose
 
+	// optionDefaultFailureMinRequests default failure min requests
+	optionDefaultFailureMinRequests = int64(3)
+
 	// optionDefaultFailureThreshold default failure threshold
-	optionDefaultFailureThreshold = int32(3)
+	optionDefaultFailureThreshold = float64(99.9)
 
 	// optionDefaultSuccessThreshold default success threshold
-	optionDefaultSuccessThreshold = int32(2)
+	optionDefaultSuccessThreshold = int64(2)
 
 	// optionDefaultResetTimer default wait time
 	optionDefaultResetTimer = 3 * time.Second
@@ -66,6 +70,7 @@ func NewCircuitBreaker(name string, opts ...Option) (*CircuitBreaker, error) {
 	cb := &CircuitBreaker{
 		name:                  name,
 		state:                 optionDefaultInitialState,
+		failureMinRequests:    optionDefaultFailureMinRequests,
 		failureThreshold:      optionDefaultFailureThreshold,
 		successThreshold:      optionDefaultSuccessThreshold,
 		invocationTimeout:     optionDefaultInvocationTimeout,
@@ -94,30 +99,38 @@ func WithInitialState(s State) Option {
 	}
 }
 
-// WithFailureThreshold builds option to set threshold value for failures
-func WithFailureThreshold(t int32) Option {
+// WithFailureThreshold builds option to set threshold value as percentage for
+// failures over successes
+func WithFailureThreshold(threshold float64, minRequests int64) Option {
 	return func(cb *CircuitBreaker) error {
-		if t < 1 {
+		if threshold < 1 {
 			return &InvalidOptionError{
-				Name: "success threshold",
+				Name: "failure threshold success rate",
+				Type: "positive float 32",
+			}
+		}
+		if minRequests < 1 {
+			return &InvalidOptionError{
+				Name: "minimum requests threshold",
 				Type: "positive integer",
 			}
 		}
-		cb.failureThreshold = t
+		cb.failureThreshold = threshold
+		cb.failureMinRequests = minRequests
 		return nil
 	}
 }
 
 // WithSuccessThreshold builds option to set threshold value for success
-func WithSuccessThreshold(t int32) Option {
+func WithSuccessThreshold(threshold int64) Option {
 	return func(cb *CircuitBreaker) error {
-		if t < 1 {
+		if threshold < 1 {
 			return &InvalidOptionError{
 				Name: "success threshold",
 				Type: "positive integer",
 			}
 		}
-		cb.successThreshold = t
+		cb.successThreshold = threshold
 		return nil
 	}
 }
@@ -130,7 +143,7 @@ func WithInvocationTimeout(duration time.Duration) Option {
 	}
 }
 
-// WithResetTimer builds option to set wait time on close state
+// WithResetTimer builds option to set reset time on close state
 func WithResetTimer(t Timer) Option {
 	return func(cb *CircuitBreaker) error {
 		cb.resetTimer = t
