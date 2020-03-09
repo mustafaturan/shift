@@ -98,7 +98,7 @@ func NewCircuitBreaker() *shift.CircuitBreaker {
 	restrictor := restrictors.NewConcurrentRunRestrictor("concurrent_runs", 100)
 	cb, err := shift.NewCircuitBreaker(
 		"twitter-cli",
-		WithRestrictors(restrictor),
+		shift.WithRestrictors(restrictor),
 		// ... other options
 	)
 	if err != nil {
@@ -129,7 +129,7 @@ func NewCircuitBreaker() *shift.CircuitBreaker {
 	timer := timers.NewConstantTimer(5 * time.Second)
 	cb, err := shift.NewCircuitBreaker(
 		"twitter-cli",
-		WithResetTimer(timer),
+		shift.WithResetTimer(timer),
 		// ... other options
 	)
 	if err != nil {
@@ -166,7 +166,7 @@ var another shift.OnStateChange = func(from, to shift.State) {
 
 cb, err := shift.NewCircuitBreaker(
 	"a-name",
-	WithOnStateChangeHandlers(printer, another),
+	shift.WithOnStateChangeHandlers(printer, another),
 	// ... other options
 )
 ```
@@ -191,7 +191,7 @@ var yetAnother shift.OnFailure = func(state shift.State, err error) {
 
 cb, err := shift.NewCircuitBreaker(
 	"a-name",
-	WithOnFailureHandlers(printer, another, yetAnother),
+	shift.WithOnFailureHandlers(printer, another, yetAnother),
 	// ... other options
 )
 ```
@@ -211,7 +211,7 @@ var another shift.OnSuccess = func(data interface{}) {
 
 cb, err := shift.NewCircuitBreaker(
 	"a-name",
-	WithOnSuccessHandlers(printer, another),
+	shift.WithOnSuccessHandlers(printer, another),
 	// ... other options
 )
 ```

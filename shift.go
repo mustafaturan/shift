@@ -77,7 +77,7 @@ error and `On Failure Handlers` get executed in order.
 		restrictor := restrictors.NewConcurrentRunRestrictor("concurrent_runs", 100)
 		cb, err := shift.NewCircuitBreaker(
 			"twitter-cli",
-			WithRestrictors(restrictor),
+			shift.WithRestrictors(restrictor),
 			// ... other options
 		)
 		if err != nil {
@@ -105,7 +105,7 @@ implementation should help to configure your reset timeout duration simply.
 		timer := timers.NewConstantTimer(5 * time.Second)
 		cb, err := shift.NewCircuitBreaker(
 			"twitter-cli",
-			WithResetTimer(timer),
+			shift.WithResetTimer(timer),
 			// ... other options
 		)
 		if err != nil {
@@ -142,7 +142,7 @@ Configure with On State Change Handlers:
 
 	cb, err := shift.NewCircuitBreaker(
 		"a-name",
-		WithOnStateChangeHandlers(printer, another),
+		shift.WithOnStateChangeHandlers(printer, another),
 		// ... other options
 	)
 
@@ -165,7 +165,7 @@ Configure with On Failure Handlers:
 
 	cb, err := shift.NewCircuitBreaker(
 		"a-name",
-		WithOnFailureHandlers(printer, another, yetAnother),
+		shift.WithOnFailureHandlers(printer, another, yetAnother),
 		// ... other options
 	)
 
@@ -183,7 +183,7 @@ Configure with On Success Handlers:
 
 	cb, err := shift.NewCircuitBreaker(
 		"a-name",
-		WithOnSuccessHandlers(printer, another),
+		shift.WithOnSuccessHandlers(printer, another),
 		// ... other options
 	)
 
