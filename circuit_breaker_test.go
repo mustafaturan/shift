@@ -19,7 +19,7 @@ func TestNewCircuitBreaker(t *testing.T) {
 		assert.Equal(t, int64(0), cb.failure)
 		assert.Equal(t, int64(0), cb.success)
 		assert.Equal(t, int64(3), cb.failureMinRequests)
-		assert.Equal(t, float64(99.9), cb.failureThreshold)
+		assert.Equal(t, float64(99.9), cb.failureRatioThreshold)
 		assert.Equal(t, int64(2), cb.successThreshold)
 		assert.Equal(t, 5*time.Second, cb.invocationTimeout)
 		assert.NotNil(t, cb.resetAt)
@@ -39,7 +39,7 @@ func TestNewCircuitBreaker(t *testing.T) {
 		assert.IsType(t, &CircuitBreaker{}, cb)
 		assert.NoError(t, err)
 		assert.Equal(t, StateHalfOpen, cb.state)
-		assert.Equal(t, float64(99.99), cb.failureThreshold)
+		assert.Equal(t, float64(99.99), cb.failureRatioThreshold)
 	})
 
 	t.Run("with invalid options", func(t *testing.T) {
@@ -67,7 +67,7 @@ func TestWithFailureThreshold(t *testing.T) {
 		opt := WithFailureThreshold(float64(99.99), 5)
 		err := opt(cb)
 		assert.NoError(t, err)
-		assert.Equal(t, float64(99.99), cb.failureThreshold)
+		assert.Equal(t, float64(99.99), cb.failureRatioThreshold)
 		assert.Equal(t, int64(5), cb.failureMinRequests)
 	})
 
@@ -77,7 +77,7 @@ func TestWithFailureThreshold(t *testing.T) {
 		err := opt(cb)
 		assert.Error(t, err)
 		assert.IsType(t, &InvalidOptionError{}, err)
-		assert.NotEqual(t, float64(-0.1), cb.failureThreshold)
+		assert.NotEqual(t, float64(-0.1), cb.failureRatioThreshold)
 		assert.NotEqual(t, int64(5), cb.failureMinRequests)
 	})
 	t.Run("invalid option value for min requests", func(t *testing.T) {
@@ -86,7 +86,7 @@ func TestWithFailureThreshold(t *testing.T) {
 		err := opt(cb)
 		assert.Error(t, err)
 		assert.IsType(t, &InvalidOptionError{}, err)
-		assert.NotEqual(t, float64(99.99), cb.failureThreshold)
+		assert.NotEqual(t, float64(99.99), cb.failureRatioThreshold)
 		assert.NotEqual(t, int64(-1), cb.failureMinRequests)
 	})
 }

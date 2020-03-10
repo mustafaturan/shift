@@ -23,11 +23,11 @@ type CircuitBreaker struct {
 	success int64
 	resetAt time.Time
 
-	failureMinRequests int64
-	failureThreshold   float64
-	successThreshold   int64
-	invocationTimeout  time.Duration
-	resetTimer         Timer
+	failureMinRequests    int64
+	failureRatioThreshold float64
+	successThreshold      int64
+	invocationTimeout     time.Duration
+	resetTimer            Timer
 
 	restrictors []Restrictor
 
@@ -71,7 +71,7 @@ func NewCircuitBreaker(name string, opts ...Option) (*CircuitBreaker, error) {
 		name:                  name,
 		state:                 optionDefaultInitialState,
 		failureMinRequests:    optionDefaultFailureMinRequests,
-		failureThreshold:      optionDefaultFailureThreshold,
+		failureRatioThreshold: optionDefaultFailureThreshold,
 		successThreshold:      optionDefaultSuccessThreshold,
 		invocationTimeout:     optionDefaultInvocationTimeout,
 		resetTimer:            timers.NewConstantTimer(optionDefaultResetTimer),
@@ -100,7 +100,7 @@ func WithInitialState(s State) Option {
 }
 
 // WithFailureThreshold builds option to set threshold value as percentage for
-// failures over successes
+// successes over all requests
 func WithFailureThreshold(threshold float64, minRequests int64) Option {
 	return func(cb *CircuitBreaker) error {
 		if threshold < 1 {
@@ -115,7 +115,7 @@ func WithFailureThreshold(threshold float64, minRequests int64) Option {
 				Type: "positive integer",
 			}
 		}
-		cb.failureThreshold = threshold
+		cb.failureRatioThreshold = threshold
 		cb.failureMinRequests = minRequests
 		return nil
 	}

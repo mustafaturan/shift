@@ -149,13 +149,7 @@ func (cb *CircuitBreaker) invoke(ctx context.Context, o Operator) chan invocatio
 func (cb *CircuitBreaker) runClose(ctx context.Context, o Operator) (interface{}, error) {
 	res, err := cb.runWithTimeout(ctx, o)
 	if err != nil {
-		failures := atomic.AddInt64(&cb.failure, 1)
-		successes := atomic.LoadInt64(&cb.success)
-		requests := successes + failures
-		ratio := (float64(failures) / float64(requests)) * 100
-		if cb.failureThreshold < ratio && cb.failureMinRequests <= requests {
-			cb.open(err)
-		}
+		cb.tripOnFailureThreshold(err)
 		cb.runOnFailureCallbacks(StateClose, err)
 		return nil, err
 	}
@@ -173,9 +167,7 @@ func (cb *CircuitBreaker) runHalfOpen(ctx context.Context, o Operator) (interfac
 		return nil, err
 	}
 
-	if cb.successThreshold <= atomic.AddInt64(&cb.success, 1) {
-		cb.close()
-	}
+	cb.tripOnSuccessThreshold()
 	cb.runOnSuccessCallbacks(res)
 	return res, err
 }
@@ -256,6 +248,22 @@ func (cb *CircuitBreaker) tryToOpen() (State, bool) {
 
 	cb.state = StateOpen
 	return s, true
+}
+
+func (cb *CircuitBreaker) tripOnFailureThreshold(err error) {
+	failure := atomic.AddInt64(&cb.failure, 1)
+	success := atomic.LoadInt64(&cb.success)
+	requests := success + failure
+	ratio := float64(success) / float64(requests) * 100
+	if ratio <= cb.failureRatioThreshold && requests >= cb.failureMinRequests {
+		cb.open(err)
+	}
+}
+
+func (cb *CircuitBreaker) tripOnSuccessThreshold() {
+	if cb.successThreshold <= atomic.AddInt64(&cb.success, 1) {
+		cb.close()
+	}
 }
 
 func (cb *CircuitBreaker) runOnSuccessCallbacks(res interface{}) {

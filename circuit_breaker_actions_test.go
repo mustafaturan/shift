@@ -72,7 +72,7 @@ func TestRun_OnStateClose(t *testing.T) {
 			WithOnFailureHandlers(onFailureHandler),
 			WithInitialState(StateClose),
 		)
-		cb.failureThreshold = 2
+		cb.failureRatioThreshold = 2
 		cb.failureMinRequests = 1
 		ctx := context.Background()
 		var fn Operate = func(context.Context) (interface{}, error) {
@@ -90,7 +90,7 @@ func TestRun_OnStateClose(t *testing.T) {
 			WithOnStateChangeHandlers(onStateChangeHandler),
 			WithInitialState(StateClose),
 		)
-		cb.failureThreshold = 99.99
+		cb.failureRatioThreshold = 99.99
 		cb.failureMinRequests = 1
 		ctx := context.Background()
 		var fn Operate = func(context.Context) (interface{}, error) {
@@ -153,7 +153,7 @@ func TestRun_OnStateHalfOpen(t *testing.T) {
 		ctx := context.Background()
 		now := time.Now()
 		cb.resetAt = now
-		cb.failureThreshold = 1
+		cb.failureRatioThreshold = 1
 		var fn Operate = func(context.Context) (interface{}, error) {
 			return nil, errors.New("foo")
 		}
