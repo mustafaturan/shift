@@ -6,10 +6,24 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/mustafaturan/shift)](https://goreportcard.com/report/github.com/mustafaturan/shift)
 [![GitHub license](https://img.shields.io/github/license/mustafaturan/shift.svg)](https://github.com/mustafaturan/shift/blob/master/LICENSE)
 
-Shift package is an optioned circuit breaker implementation. If you are
-interested in learning what is circuit breaker or sample use cases for circuit
-breakers then you can refer to [References](#References) section of this
-`README.md` file.
+Shift package is an optioned circuit breaker implementation.
+
+**For those who is new to the concept, a brief summary:**
+* circuit breaker has 3 states: `close`, `half-open` and `open`
+* when it is in `open` state, *something bad is going on the executions*
+* when it is in `half-open` state, then there *could be a chance for recovery*
+from bad state and circuit breaker evaluates criterias to trip to next states
+* when it is in `close` state, then *everything is working as expected*
+
+**State changes in circuit breaker:**
+* `close -> open`: `close` can trip to `open` state
+* `close <- half-open -> open`: `half-open` can trip to both `close` and `open`
+states
+* `open -> half-open`: `open` can trip to `half-open`
+
+If you are interested in learning what is circuit breaker or sample use cases
+for circuit breakers then you can refer to [References](#References) section of
+this `README.md` file.
 
 ## API
 
@@ -24,10 +38,14 @@ constant can be used.
 * Configurable with optioned plugable components
 * Comes with built-in execution timeout feature which cancels the execution by
 optioned timeout duration
+* Comes with built-in bucketted counter feature which counts the stats by given
+durationed buckets
 * Allows subscribing state change, failure and success events
 * Allows overriding the current state with callbacks
-* Allows adding reset timer which can be implemented using an exponential
+* Allows overriding reset timer which can be implemented using an exponential
 backoff algorithm or any other algorithm when needed
+* Allows overriding counter which can allow using an external counter for
+managing the stats
 * Allows adding optional restrictors by execution like max concurrent runs
 
 ## Installation
@@ -40,6 +58,29 @@ Via go packages:
 
 ### Basic with defaults
 
+On configurations 3 options are critical to have a healthy the circuit breaker,
+so on any configuration it is highly recommended to specify at least the
+following 3 options with desired numbers.
+
+```go
+// Trip from Close to Open state under 95.0% success ratio at minimum of
+// 20 invokations on configured duration(see WithCounter for durationed stats)
+shift.WithOpener(StateClose, 95.0, 20),
+
+// Trip from Half-Open to Open state under 75.0% success ratio at minimum of
+// 10 invokations on configured duration(see WithCounter for durationed stats)
+shift.WithOpener(StateHalfOpen, 75.0, 10),
+
+// Trip from Half-Open to Close state on 90.0% of success ratio at minumum of
+// 10 invokations on configured duration(see WithCounter for durationed stats)
+shift.WithCloser(90.0, 10),
+```
+
+It is also recommended to have multiple circuit breakers for each invoker with
+their own specific configurations depending on the SLA requirements.
+For example: A circuit breaker for Github, another for Twitter, and yet
+another for Facebook API client.
+
 #### Execute with a function implementation
 
 ```go
@@ -50,11 +91,24 @@ import (
 	"github.com/mustafafuran/shift"
 )
 
-func NewCircuitBreaker() *shift.CircuitBreaker {
-	successRate, minRequests := float64(99.99), int64(3)
-	cb, err := shift.NewCircuitBreaker(
+func NewCircuitBreaker() *shift.Shift {
+	cb, err := shift.New(
 		"a-name-for-the-breaker",
-		shift.WithFailureThreshold(successRate, minRequests),
+
+		// Trip from Close to Open state under 95.0% success ratio at minimum of
+		// 20 invokations on configured duration(see WithCounter for durationed
+		// stats)
+		shift.WithOpener(StateClose, 95.0, 20),
+
+		// Trip from Half-Open to Open state under 75.0% success ratio at
+		// minimum of 10 invokations on configured duration(see WithCounter for
+		// durationed stats)
+		shift.WithOpener(StateHalfOpen, 75.0, 10),
+
+		// Trip from Half-Open to Close state on 90.0% of success ratio at
+		// minumum of 10 invokations on configured duration(see WithCounter for
+		// durationed stats)
+		shift.WithCloser(90.0, 10),
 	)
 	if err != nil {
 		panic(err)
@@ -95,14 +149,26 @@ an error and `On Failure Handlers` get executed in order.
 ```go
 import (
 	"github.com/mustafafuran/shift"
-	"github.com/mustafafuran/shift/restrictors"
+	"github.com/mustafafuran/shift/restrictor"
 )
 
 func NewCircuitBreaker() *shift.CircuitBreaker {
-	restrictor := restrictors.NewConcurrentRunRestrictor("concurrent_runs", 100)
-	cb, err := shift.NewCircuitBreaker(
+	restrictor, err := restrictor.NewConcurrentRunRestrictor("concurrent_runs", 100)
+	if err != nil {
+		return err
+	}
+
+	cb, err := shift.New(
 		"twitter-cli",
+
+		// Restrictors
 		shift.WithRestrictors(restrictor),
+
+		// Trippers
+		shift.WithOpener(StateClose, 95.0, 20),
+		shift.WithOpener(StateHalfOpen, 75.0, 10),
+		shift.WithCloser(90.0, 10),
+
 		// ... other options
 	)
 	if err != nil {
@@ -126,14 +192,25 @@ implementation should simply help to configure your reset timeout duration.
 
 import (
 	"github.com/mustafafuran/shift"
-	"github.com/mustafafuran/shift/timers"
+	"github.com/mustafafuran/shift/timer"
 )
 
 func NewCircuitBreaker() *shift.CircuitBreaker {
-	timer := timers.NewConstantTimer(5 * time.Second)
-	cb, err := shift.NewCircuitBreaker(
+	timer, err := timer.NewConstantTimer(5 * time.Second)
+	if err != nil {
+		panic(err)
+	}
+
+	cb, err := shift.New(
 		"twitter-cli",
+		// Reset Timer
 		shift.WithResetTimer(timer),
+
+		// Trippers
+		shift.WithOpener(StateClose, 95.0, 20),
+		shift.WithOpener(StateHalfOpen, 75.0, 10),
+		shift.WithCloser(90.0, 10),
+
 		// ... other options
 	)
 	if err != nil {
@@ -143,10 +220,62 @@ func NewCircuitBreaker() *shift.CircuitBreaker {
 }
 ```
 
-### Monitoring
+### Creating a counter based on your bucketing needs
 
-Monitoring is set with options in shift package CircuitBreaker initialization.
-Shift package allows adding multiple hooks on three circuit breaker events;
+Any counter strategy can be implemented on top of `shift.Counter` interface.
+The default counter strategy is using a bucketing mechanism to bucket time and
+add/drop metrics into the stats. The default Counter uses 1 second durationed
+10 buckets. There are two possible options to modify the Counter based on your
+needs:
+
+1) Create a new counter instance and pass as counter option
+
+2) Create your own counter implementations and pass the instance as counter
+option
+
+```go
+
+import (
+	"github.com/mustafafuran/shift"
+	"github.com/mustafafuran/shift/counter"
+)
+
+func NewCircuitBreaker() *shift.CircuitBreaker {
+	// The TimeBucketCounter automatically drops a the oldest bucket after
+	// filling the available last bucket and then shift left the buckets, so a
+	// new space is freeing up for a new bucket
+
+	// 60 buckets each holds the stats for 2 seconds
+	capacity, duration := 60, 2000 * time.Millisecond
+	counter, err := counter.TimeBucketCounter(capacity, duration)
+	if err != nil {
+		panic(err)
+	}
+
+	cb, err := shift.New(
+		"twitter-cli",
+		// Counter
+		shift.WithCounter(counter),
+
+		// Trippers
+		shift.WithOpener(StateClose, 95.0, 20),
+		shift.WithOpener(StateHalfOpen, 75.0, 10),
+		shift.WithCloser(90.0, 10),
+
+		// ... other options
+	)
+	if err != nil {
+		panic(err)
+	}
+	return cb
+}
+```
+
+### Events
+
+Shift package allows adding multiple hooks on failure, success and state change
+circuit breaker events. Both success and failure events come with a context
+which holds state and stats;
 
 * **State Change Event:** Allows attaching handlers on the circuit breaker
 state changes
@@ -159,18 +288,18 @@ execution results without an error
 
 ```go
 // a printer handler
-var printer shift.OnStateChange = func(from, to shift.State) {
-	fmt.Printf("State changed from %s, to %s", from, to)
+var printer shift.OnStateChange = func(from, to shift.State, stats shift.Stats) {
+	fmt.Printf("State changed from %s, to %s, %+v", from, to, stats)
 }
 
 // another handler
-var another shift.OnStateChange = func(from, to shift.State) {
+var another shift.OnStateChange = func(from, to shift.State, stats shift.Stats) {
 	// do sth
 }
 
-cb, err := shift.NewCircuitBreaker(
+cb, err := shift.New(
 	"a-name",
-	shift.WithOnStateChangeHandlers(printer, another),
+	shift.WithStateChangeHandlers(printer, another),
 	// ... other options
 )
 ```
@@ -179,23 +308,34 @@ cb, err := shift.NewCircuitBreaker(
 
 ```go
 // a printer handler
-var printer shift.OnFailure = func(state shift.State, err error) {
-	fmt.Printf("execution erred on state(%s) with %s", state, err)
+var printer shift.OnFailure = func(ctx context.Context, err error) {
+	state := ctx.Value(CtxState).(State)
+	stats := ctx.Value(CtxStats).(Stats)
+
+	fmt.Printf("execution erred on state(%s) with %s and stats are %+v", state, err, stats)
 }
 
 // another handler
-var another shift.OnFailure = func(state shift.State, err error) {
-	// do sth: maybe increment metrics when the execution err
+var another shift.OnFailure = func(ctx context.Context, err error) {
+	// do sth: maybe increment an external metric when the execution err
 }
 
 // yetAnother handler
-var yetAnother shift.OnFailure = func(state shift.State, err error) {
+var yetAnother shift.OnFailure = func(ctx context.Context, err error) {
 	// do sth
 }
 
-cb, err := shift.NewCircuitBreaker(
+cb, err := shift.New(
 	"a-name",
-	shift.WithOnFailureHandlers(printer, another, yetAnother),
+	// appends the failure handlers provided
+	shift.WithFailureHandlers(StateClose, printer, another, yetAnother),
+	shift.WithFailureHandlers(StateHalfOpen, printer, another),
+
+	// Trippers
+	shift.WithOpener(StateClose, 95.0, 20),
+	shift.WithOpener(StateHalfOpen, 75.0, 10),
+	shift.WithCloser(90.0, 10),
+
 	// ... other options
 )
 ```
@@ -204,18 +344,30 @@ cb, err := shift.NewCircuitBreaker(
 
 ```go
 // a printer handler
-var printer shift.OnSuccess = func(data interface{}) {
-	fmt.Printf("execution succeeded and resulted with %+v", data)
+var printer shift.OnSuccess = func(ctx context.Context, data interface{}) {
+	state := ctx.Value(CtxState).(State)
+	stats := ctx.Value(CtxStats).(Stats)
+
+	fmt.Printf("execution succeeded on %s and resulted with %+v and stats are %+v", state, data, stats)
 }
 
 // another handler
-var another shift.OnSuccess = func(data interface{}) {
-	// do sth: maybe increment metrics when the execution succeeds
+var another shift.OnSuccess = func(ctx context.Context, data interface{}) {
+	// do sth: maybe increment an external metric when the execution succeeds
 }
 
-cb, err := shift.NewCircuitBreaker(
+cb, err := shift.New(
 	"a-name",
-	shift.WithOnSuccessHandlers(printer, another),
+
+	// Appends the success handlers for a given state
+	shift.WithSuccessHandlers(StateClose, printer, another),
+	shift.WithSuccessHandlers(StateHalfOpen, printer),
+
+	// Trippers
+	shift.WithOpener(StateClose, 95.0, 20),
+	shift.WithOpener(StateHalfOpen, 75.0, 10),
+	shift.WithCloser(90.0, 10),
+
 	// ... other options
 )
 ```

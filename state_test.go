@@ -59,6 +59,7 @@ func TestString(t *testing.T) {
 		{actual: StateClose, expected: "close"},
 		{actual: StateHalfOpen, expected: "half-open"},
 		{actual: StateOpen, expected: "open"},
+		{actual: StateUnknown, expected: "unknown"},
 		{actual: State(int8(-1)), expected: "unknown"},
 	}
 

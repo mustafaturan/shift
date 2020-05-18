@@ -2,7 +2,7 @@
 // Use of this source code is governed by a Apache License 2.0 license that can
 // be found in the LICENSE file.
 
-package timers
+package timer
 
 import "time"
 
@@ -13,8 +13,14 @@ type ConstantTimer struct {
 }
 
 // NewConstantTimer inits ConstantTimer with the given duration
-func NewConstantTimer(d time.Duration) *ConstantTimer {
-	return &ConstantTimer{duration: d}
+func NewConstantTimer(duration time.Duration) (*ConstantTimer, error) {
+	if duration < time.Second {
+		return nil, &InvalidOptionError{
+			Name: "constant timer duration",
+			Type: "positive duration(greater than or equal to a second)",
+		}
+	}
+	return &ConstantTimer{duration: duration}, nil
 }
 
 // Next returns always the same duration regardless of the error type

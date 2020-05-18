@@ -1,6 +1,7 @@
-package restrictors
+package restrictor
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -22,7 +23,6 @@ func TestNewConcurrentRunRestrictor(t *testing.T) {
 	t.Run("invalid options", func(t *testing.T) {
 		r, err := NewConcurrentRunRestrictor("test", -1)
 		assert.Error(t, err)
-		assert.EqualError(t, err, "invalid option provided for concurrent run threshold, must be positive integer")
 		assert.IsType(t, &InvalidOptionError{}, err)
 		assert.Nil(t, r)
 	})
@@ -31,7 +31,7 @@ func TestNewConcurrentRunRestrictor(t *testing.T) {
 func TestCheck(t *testing.T) {
 	t.Run("under threshold", func(t *testing.T) {
 		r, _ := NewConcurrentRunRestrictor("test", 1)
-		ok, err := r.Check()
+		ok, err := r.Check(context.Background())
 		assert.True(t, ok)
 		assert.NoError(t, err)
 	})
@@ -40,22 +40,22 @@ func TestCheck(t *testing.T) {
 		r, _ := NewConcurrentRunRestrictor("test", 1)
 
 		go func() {
-			_, err := r.Check()
+			_, err := r.Check(context.Background())
 			require.NoError(t, err)
 		}()
 
 		time.Sleep(50 * time.Millisecond)
-		ok, err := r.Check()
+		ok, err := r.Check(context.Background())
 		assert.False(t, ok)
 		assert.Error(t, err)
-		assert.EqualError(t, err, "concurrent run restriction(test) threshold reached / runs: 1")
+		assert.IsType(t, &ThresholdError{}, err)
 		assert.True(t, r.current > r.threshold)
 	})
 }
 
 func TestDefer(t *testing.T) {
 	r, _ := NewConcurrentRunRestrictor("test", 1)
-	_, err := r.Check()
+	_, err := r.Check(context.Background())
 	require.NoError(t, err)
 
 	assert.Equal(t, int64(1), r.current)
