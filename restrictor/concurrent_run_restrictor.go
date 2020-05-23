@@ -2,10 +2,10 @@
 // Use of this source code is governed by a Apache License 2.0 license that can
 // be found in the LICENSE file.
 
-package restrictors
+package restrictor
 
 import (
-	"fmt"
+	"context"
 	"sync/atomic"
 )
 
@@ -30,9 +30,9 @@ func NewConcurrentRunRestrictor(name string, threshold int64) (*ConcurrentRunRes
 }
 
 // Check checks if possible to add new runs
-func (r *ConcurrentRunRestrictor) Check() (bool, error) {
+func (r *ConcurrentRunRestrictor) Check(_ context.Context) (bool, error) {
 	if r.threshold < atomic.AddInt64(&r.current, 1) {
-		return false, &ConcurrentRunRestrictorThresholdError{
+		return false, &ThresholdError{
 			Name:      r.name,
 			Threshold: r.threshold,
 		}
@@ -43,32 +43,4 @@ func (r *ConcurrentRunRestrictor) Check() (bool, error) {
 // Defer removes 1 from current runs
 func (r *ConcurrentRunRestrictor) Defer() {
 	atomic.AddInt64(&r.current, -1)
-}
-
-// ConcurrentRunRestrictorThresholdError is a error type for max concurrent runs
-type ConcurrentRunRestrictorThresholdError struct {
-	Name      string
-	Threshold int64
-}
-
-func (e *ConcurrentRunRestrictorThresholdError) Error() string {
-	return fmt.Sprintf(
-		"concurrent run restriction(%s) threshold reached / runs: %d",
-		e.Name,
-		e.Threshold,
-	)
-}
-
-// InvalidOptionError is a error tyoe for options
-type InvalidOptionError struct {
-	Name string
-	Type string
-}
-
-func (e *InvalidOptionError) Error() string {
-	return fmt.Sprintf(
-		"invalid option provided for %s, must be %s",
-		e.Name,
-		e.Type,
-	)
 }

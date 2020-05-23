@@ -8,8 +8,10 @@ package shift
 type State int8
 
 const (
+	// StateUnknown is an unknown state for circuit breaker
+	StateUnknown State = iota
 	// StateClose close state for circuit breaker
-	StateClose State = iota
+	StateClose
 	// StateHalfOpen half-open state for circuit breaker
 	StateHalfOpen
 	// StateOpen open state for circuit breaker

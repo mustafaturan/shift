@@ -1,8 +1,8 @@
 module github.com/mustafaturan/shift
 
-go 1.13
+go 1.14
 
 require (
-	github.com/pkg/errors v0.9.1 // indirect
+	github.com/golang/mock v1.4.3
 	github.com/stretchr/testify v1.5.1
 )
