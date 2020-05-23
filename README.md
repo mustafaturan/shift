@@ -8,7 +8,7 @@
 
 Shift package is an optioned circuit breaker implementation.
 
-**For those who is new to the concept, a brief summary:**
+**For those who are new to the concept, a brief summary:**
 * circuit breaker has 3 states: `close`, `half-open` and `open`
 * when it is in `open` state, *something bad is going on the executions* and to
 prevent bad invokations, the circuit breaker gave a break to new invokations,
