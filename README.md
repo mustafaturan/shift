@@ -60,7 +60,7 @@ Via go packages:
 
 ### Basic with defaults
 
-On configurations 3 options are critical to have a healthy the circuit breaker,
+On configurations 3 options are critical to have a healthy circuit breaker,
 so on any configuration it is highly recommended to specify at least the
 following 3 options with desired numbers.
 
