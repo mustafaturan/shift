@@ -1,7 +1,7 @@
 package shift
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 	"time"
 
@@ -42,18 +42,21 @@ func TestIsOnOpenStateError(t *testing.T) {
 	assert.EqualError(t, err, "is on open state")
 }
 
-func TestInvokationError(t *testing.T) {
-	err := &InvokationError{
+func TestInvocationError(t *testing.T) {
+	err := &InvocationError{
 		Name: "test",
-		Err:  fmt.Errorf("inner err"),
+		Err: &InvocationTimeoutError{
+			Duration: 5 * time.Second,
+		},
 	}
 
 	assert.Error(t, err)
-	assert.EqualError(t, err, "circuit breaker(test) invocation failed with inner err")
+	assert.EqualError(t, err, "circuit breaker(test) invocation failed with invocation timeout on 5s")
+	assert.EqualError(t, errors.Unwrap(err), "invocation timeout on 5s")
 }
 
-func TestInvokationTimeoutError(t *testing.T) {
-	err := &InvokationTimeoutError{
+func TestInvocationTimeoutError(t *testing.T) {
+	err := &InvocationTimeoutError{
 		Duration: 5 * time.Second,
 	}
 

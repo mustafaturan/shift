@@ -115,7 +115,7 @@ func TestWithInitialState(t *testing.T) {
 	assert.Equal(t, state, s.state)
 }
 
-func TestWithInvokationTimeout(t *testing.T) {
+func TestWithInvocationTimeout(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 

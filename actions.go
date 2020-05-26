@@ -140,7 +140,7 @@ func (s *Shift) runWithCallbacks(ctx context.Context, o Operator) (interface{}, 
 
 	// Wrap the error with additional circuit breaker name information
 	if err != nil {
-		err = &InvokationError{Name: s.name, Err: err}
+		err = &InvocationError{Name: s.name, Err: err}
 		s.runFailureCallbacks(ctx, err)
 	} else {
 		s.runSuccessCallbacks(ctx, res)

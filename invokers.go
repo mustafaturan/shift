@@ -49,7 +49,7 @@ func (i *deadlineInvoker) invoke(ctx context.Context, o Operator) (interface{}, 
 	select {
 	case <-ctx.Done():
 		i.timeoutCallback()
-		return nil, &InvokationTimeoutError{Duration: i.timeout}
+		return nil, &InvocationTimeoutError{Duration: i.timeout}
 	case i := <-i.async(ctx, o):
 		return i.res, i.err
 	}

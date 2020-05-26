@@ -57,22 +57,26 @@ func (e *IsOnOpenStateError) Error() string {
 	return "is on open state"
 }
 
-// InvokationError is an error type to wrap invocation errors
-type InvokationError struct {
+// InvocationError is an error type to wrap invocation errors
+type InvocationError struct {
 	Name string
 	Err  error
 }
 
-func (e *InvokationError) Error() string {
+func (e *InvocationError) Error() string {
 	return fmt.Sprintf("circuit breaker(%s) invocation failed with %s", e.Name, e.Err)
 }
 
-// InvokationTimeoutError is a error type for invocation timeouts
-type InvokationTimeoutError struct {
+func (e *InvocationError) Unwrap() error {
+	return e.Err
+}
+
+// InvocationTimeoutError is a error type for invocation timeouts
+type InvocationTimeoutError struct {
 	Duration time.Duration
 }
 
-func (e *InvokationTimeoutError) Error() string {
+func (e *InvocationTimeoutError) Error() string {
 	return fmt.Sprintf(
 		"invocation timeout on %s",
 		e.Duration,

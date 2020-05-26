@@ -24,7 +24,7 @@ func TestDeadlineInvoker_Invoke(t *testing.T) {
 		res, err := invoker.invoke(context.Background(), fn)
 
 		assert.Error(t, err)
-		assert.IsType(t, &InvokationTimeoutError{}, err)
+		assert.IsType(t, &InvocationTimeoutError{}, err)
 		assert.Nil(t, res)
 		assert.Equal(t, true, called)
 	})
