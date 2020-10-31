@@ -15,7 +15,7 @@ import (
 
 const (
 	// Version matches with the current version of the package
-	Version = "1.0.0-beta"
+	Version = "1.0.0"
 )
 
 // Shift is an optioned circuit breaker implementation

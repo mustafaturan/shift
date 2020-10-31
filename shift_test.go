@@ -16,7 +16,7 @@ const (
 )
 
 func TestVersion(t *testing.T) {
-	assert.Equal(t, Version, "1.0.0-beta")
+	assert.Equal(t, Version, "1.0.0")
 }
 
 func TestNew(t *testing.T) {

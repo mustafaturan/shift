@@ -29,8 +29,6 @@ this `README.md` file.
 
 ## API
 
-Although no significant change should be expected on design and features, the
-method names and arities/args may subject to change until version `1.0.0`.
 Shift package follows [semantic versioning 2.x rules](https://semver.org/) on
 releases and tags. To access to the current package version, `shift.Version`
 constant can be used.
