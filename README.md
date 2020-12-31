@@ -11,10 +11,10 @@ Shift package is an optioned circuit breaker implementation.
 **For those who are new to the concept, a brief summary:**
 * circuit breaker has 3 states: `close`, `half-open` and `open`
 * when it is in `open` state, *something bad is going on the executions* and to
-prevent bad invokations, the circuit breaker gave a break to new invokations,
-and returns error
-* when it is in `half-open` state, then there *could be a chance for recovery*
-from bad state and circuit breaker evaluates criterias to trip to next states
+prevent additional bad invokations(failures), the circuit breaker gives a break 
+to new invokations and returns error
+* when it is in `half-open` state, then there *might be a chance for recovery*
+from bad state and circuit breaker evaluates the criterias to trip to the next states
 * when it is in `close` state, then *everything is working as expected*
 
 **State changes in circuit breaker:**
